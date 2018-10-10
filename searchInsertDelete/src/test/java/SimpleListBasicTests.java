@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 public class SimpleListBasicTests {
 
     private static Stream<SimpleList> simpleListProvider() {
-        return Stream.of(new SIDLinkedList(), new SyncLinkedList<>());
+        return Stream.of(new SIDLinkedList(), new LockedLinkedList<>());
     }
 
     @ParameterizedTest
@@ -34,7 +34,7 @@ public class SimpleListBasicTests {
 
         TestObject nonObj = new TestObject(2L, "Test Non Exist");
 
-        Assertions.assertTrue(list.search(nonObj) < 0);
+            Assertions.assertTrue(list.search(nonObj) < 0);
     }
 
     @ParameterizedTest

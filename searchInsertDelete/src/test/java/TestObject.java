@@ -1,8 +1,11 @@
+import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class TestObject {
+public class TestObject implements TimedObject {
+
     Long id;
     String name;
+    LocalDateTime dateTime;
 
     public TestObject() {
     }
@@ -10,6 +13,11 @@ public class TestObject {
     public TestObject(Long id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    @Override
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
     }
 
     @Override
@@ -24,5 +32,10 @@ public class TestObject {
     @Override
     public int hashCode() {
         return Objects.hash(id, name);
+    }
+
+    @Override
+    public String toString() {
+        return "TestObject{id=" + id + ", name='" + name + ", dateTime=" + dateTime + "'}";
     }
 }

@@ -1,61 +1,60 @@
 import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class SIDLinkedList<E extends TimedObject> implements SimpleList<E> {
+public class LockedLinkedList<E extends TimedObject> implements SimpleList<E> {
 
     private final List<E> list = new LinkedList<>();
 
-    private final Semaphore insertMutex = new Semaphore(1);
-    private final Semaphore noSearcher = new Semaphore(1);
-    private final Semaphore noInserter = new Semaphore(1);
-    private final Lightswitch searchSwitch = new Lightswitch();
-    private final Lightswitch insertSwitch = new Lightswitch();
+    private final ReadWriteLock searchLock = new ReentrantReadWriteLock(true);
+    private final Lock insertLock = new ReentrantLock(true);
 
     @Override
     public int search(E e) throws InterruptedException {
-        searchSwitch.lock(noSearcher);
+        searchLock.readLock().lock();
         try { // search operation
             return list.indexOf(e);
         } finally {
-            searchSwitch.unlock(noSearcher);
+            searchLock.readLock().unlock();
         }
     }
 
     @Override
     public E get(int index) throws InterruptedException {
-        searchSwitch.lock(noSearcher);
+        searchLock.readLock().lock();
         try { // get operation
             return list.get(index);
         } finally {
-            searchSwitch.unlock(noSearcher);
+            searchLock.readLock().unlock();
         }
     }
 
     @Override
     public boolean insert(E e) throws InterruptedException {
-        insertSwitch.lock(noInserter);
-        insertMutex.acquire();
+        insertLock.lock();
+        searchLock.readLock().lock();
         try { // critical section
             e.setDateTime(LocalDateTime.now());
             return list.add(e);
         } finally {
-            insertMutex.release();
-            insertSwitch.unlock(noInserter);
+            searchLock.readLock().unlock();
+            insertLock.unlock();
         }
     }
 
     @Override
     public boolean delete(E e) throws InterruptedException {
-        noSearcher.acquire();
-        noInserter.acquire();
+        insertLock.lock();
+        searchLock.writeLock().lock();
         try { // critical section
             return list.remove(e);
         } finally {
-            noInserter.release();
-            noSearcher.release();
+            searchLock.writeLock().unlock();
+            insertLock.unlock();
         }
     }
 }
-

@@ -1,4 +1,4 @@
-public interface SimpleList<E> {
+public interface SimpleList<E extends TimedObject> {
 
     int search(E e) throws InterruptedException;
 
