@@ -6,9 +6,8 @@ public class Lightswitch {
     private final Semaphore mutex = new Semaphore(1);
 
     public void lock(Semaphore semaphore) throws InterruptedException {
+        mutex.acquire();
         try {
-            mutex.acquire();
-
             counter++;
             if (counter == 1) {
                 semaphore.acquire();
@@ -19,9 +18,8 @@ public class Lightswitch {
     }
 
     public void unlock(Semaphore semaphore) throws InterruptedException {
+        mutex.acquire();
         try {
-            mutex.acquire();
-
             counter--;
             if (counter == 0) {
                 semaphore.release();
