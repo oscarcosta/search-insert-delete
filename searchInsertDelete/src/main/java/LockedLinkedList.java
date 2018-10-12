@@ -1,6 +1,7 @@
-import java.time.LocalDateTime;
+
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -8,10 +9,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class LockedLinkedList<E extends TimedObject> implements SimpleList<E> {
 
+    private AtomicLong atomicLong = new AtomicLong();
+
     private final List<E> list = new LinkedList<>();
 
     private final ReadWriteLock searchLock = new ReentrantReadWriteLock(true);
     private final Lock insertLock = new ReentrantLock(true);
+
+    @Override
+    public int size() {
+        return list.size();
+    }
 
     @Override
     public int search(E e) throws InterruptedException {
@@ -38,7 +46,7 @@ public class LockedLinkedList<E extends TimedObject> implements SimpleList<E> {
         insertLock.lock();
         searchLock.readLock().lock();
         try { // critical section
-            e.setDateTime(LocalDateTime.now());
+            e.setUID(atomicLong.getAndIncrement());
             return list.add(e);
         } finally {
             searchLock.readLock().unlock();

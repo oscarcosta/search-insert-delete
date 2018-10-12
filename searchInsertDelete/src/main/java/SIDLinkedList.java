@@ -1,9 +1,12 @@
-import java.time.LocalDateTime;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SIDLinkedList<E extends TimedObject> implements SimpleList<E> {
+
+    private AtomicLong atomicLong = new AtomicLong();
 
     private final List<E> list = new LinkedList<>();
 
@@ -24,6 +27,11 @@ public class SIDLinkedList<E extends TimedObject> implements SimpleList<E> {
     }
 
     @Override
+    public int size() {
+        return list.size();
+    }
+
+    @Override
     public E get(int index) throws InterruptedException {
         searchSwitch.lock(noSearcher);
         try { // get operation
@@ -38,7 +46,7 @@ public class SIDLinkedList<E extends TimedObject> implements SimpleList<E> {
         insertSwitch.lock(noInserter);
         insertMutex.acquire();
         try { // critical section
-            e.setDateTime(LocalDateTime.now());
+            e.setUID(atomicLong.getAndIncrement());
             return list.add(e);
         } finally {
             insertMutex.release();

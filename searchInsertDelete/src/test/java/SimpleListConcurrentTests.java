@@ -16,47 +16,33 @@ public class SimpleListConcurrentTests {
     }
 
     private static Stream<TestObject> buildTestObjects(int start, int end) {
-        return LongStream.range(start, end).mapToObj(i -> new TestObject(i, "Test " + i));
+        return LongStream.range(start, end).mapToObj(i -> new TestObject(i));
     }
 
     @ParameterizedTest
     @MethodSource("simpleListProvider")
-    public void insertAndSeachConcurrently(final SimpleList<TestObject> list) throws Exception {
-        int numObjects = 100;
-        int numThreads = 10;
+    public void insertConcurrently(final SimpleList<TestObject> list) throws Exception {
+        final int numObjects = 10000;
+        final int numThreads = 5;
 
-        List<TestObject> testObjects = buildTestObjects(1, numObjects).collect(Collectors.toList());
+        List<TestObject> testObjects = buildTestObjects(0, numObjects).collect(Collectors.toList());
 
         ExecutorService threadPool = Executors.newFixedThreadPool(numThreads);
-        final CountDownLatch latch = new CountDownLatch(numThreads);
+        final CountDownLatch latch = new CountDownLatch(numObjects);
 
         List<Future<Integer>> futureInserts = new ArrayList<>();
-        List<Future<Integer>> futuresSearch = new ArrayList<>();
-        for (int i = 0; i < numThreads / 2; i++) {
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjects.get(i);
             futureInserts.add(threadPool.submit(() -> {
                 int countInserts = 0;
-                for (int j = 0; j < numObjects / numThreads; j++) {
-                    TestObject object = testObjects.get(j);
-                    if (list.insert(object)) {
-                        System.out.println("Insert: " + object);
-                        countInserts++;
-                    }
+                if (list.insert(object)) {
+                    //int index = list.search(object);
+                    //TestObject tempObj = list.get(index);
+                    //System.out.println("Inserted: " + tempObj);
+                    countInserts++;
                 }
                 latch.countDown();
                 return countInserts;
-            }));
-
-            futuresSearch.add(threadPool.submit(() -> {
-                int countSearchs = 0;
-                for (TestObject object : testObjects) {
-                    int index = list.search(object);
-                    if (index >= 0) {
-                        System.out.println("Search: " + object);
-                        countSearchs++;
-                    }
-                }
-                latch.countDown();
-                return countSearchs;
             }));
         }
         latch.await();
@@ -66,13 +52,186 @@ public class SimpleListConcurrentTests {
             sumInserts += future.get();
         }
 
+        Assertions.assertEquals(sumInserts, numObjects);
+        Assertions.assertEquals(list.size(), numObjects);
+    }
+
+    @ParameterizedTest
+    @MethodSource("simpleListProvider")
+    public void deleteConcurrently(final SimpleList<TestObject> list) throws Exception {
+        final int numObjects = 10000;
+        final int numThreads = 5;
+
+        // Insert elements
+        List<TestObject> testObjects = buildTestObjects(0, numObjects).collect(Collectors.toList());
+        testObjects.forEach(testObject -> {
+            try {
+                list.insert(testObject);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(numThreads);
+        final CountDownLatch latch = new CountDownLatch(numObjects);
+
+        List<Future<Integer>> futureDeletes = new ArrayList<>();
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjects.get(i);
+            futureDeletes.add(threadPool.submit(() -> {
+                int countDeletes = 0;
+                if (list.delete(object)) {
+                    countDeletes++;
+                }
+                latch.countDown();
+                return countDeletes;
+            }));
+        }
+        latch.await();
+
+        int sumDeletions = 0;
+        for (Future<Integer> future : futureDeletes) {
+            sumDeletions += future.get();
+        }
+
+        Assertions.assertEquals(sumDeletions, numObjects);
+        Assertions.assertEquals(list.size(), 0);
+    }
+
+    @ParameterizedTest
+    @MethodSource("simpleListProvider")
+    public void searchConcurrently(final SimpleList<TestObject> list) throws Exception {
+        final int numObjects = 10000;
+        final int numThreads = 5;
+
+        // Insert elements
+        List<TestObject> testObjects = buildTestObjects(0, numObjects).collect(Collectors.toList());
+        testObjects.forEach(testObject -> {
+            try {
+                list.insert(testObject);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(numThreads);
+        final CountDownLatch latch = new CountDownLatch(numObjects);
+
+        List<Future<Integer>> futureSearches = new ArrayList<>();
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjects.get(i);
+            futureSearches.add(threadPool.submit(() -> {
+                int countSearches = 0;
+                if (list.search(object) >= 0) {
+                    countSearches++;
+                }
+                latch.countDown();
+                return countSearches;
+            }));
+        }
+        latch.await();
+
         int sumSearches = 0;
-        for (Future<Integer> future : futuresSearch) {
+        for (Future<Integer> future : futureSearches) {
             sumSearches += future.get();
         }
-        System.out.println(sumInserts + "/" + sumSearches);
 
-        Assertions.assertEquals(sumSearches, sumInserts);
+        Assertions.assertEquals(sumSearches, numObjects);
+    }
+
+    @ParameterizedTest
+    @MethodSource("simpleListProvider")
+    public void searchInsertDeleteConcurrently(final SimpleList<TestObject> list) throws Exception {
+        final int numObjects = 10000;
+        final int numThreads = 5;
+
+        // Insert elements
+        List<TestObject> testObjectsForDelete = buildTestObjects(0, numObjects).collect(Collectors.toList());
+        testObjectsForDelete.forEach(testObject -> {
+            try {
+                list.insert(testObject);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        List<TestObject> testObjectsForSearch = buildTestObjects(numObjects, numObjects * 2).collect(Collectors.toList());
+        testObjectsForSearch.forEach(testObject -> {
+            try {
+                list.insert(testObject);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(numThreads);
+        final CountDownLatch latch = new CountDownLatch(numObjects * 3);
+
+        // INSERT
+        List<TestObject> testObjectsForInsert = buildTestObjects(numObjects * 2, numObjects * 3).collect(Collectors.toList());
+        List<Future<Integer>> futureInserts = new ArrayList<>();
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjectsForInsert.get(i);
+            futureInserts.add(threadPool.submit(() -> {
+                int countInserts = 0;
+                if (list.insert(object)) {
+                    //int index = list.search(object);
+                    //TestObject tempObj = list.get(index);
+                    //System.out.println("Inserted: " + tempObj);
+                    countInserts++;
+                }
+                latch.countDown();
+                return countInserts;
+            }));
+        }
+
+        // SEARCH
+        List<Future<Integer>> futureSearches = new ArrayList<>();
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjectsForSearch.get(i);
+            futureSearches.add(threadPool.submit(() -> {
+                int countSearches = 0;
+                if (list.search(object) >= 0) {
+                    countSearches++;
+                }
+                latch.countDown();
+                return countSearches;
+            }));
+        }
+
+        // DELETE
+        List<Future<Integer>> futureDeletes = new ArrayList<>();
+        for (int i = 0; i < numObjects; i++) {
+            final TestObject object = testObjectsForDelete.get(i);
+            futureDeletes.add(threadPool.submit(() -> {
+                int countDeletes = 0;
+                if (list.delete(object)) {
+                    countDeletes++;
+                }
+                latch.countDown();
+                return countDeletes;
+            }));
+        }
+
+        // Wait!
+        latch.await();
+
+        int sumSearches = 0;
+        for (Future<Integer> future : futureSearches) {
+            sumSearches += future.get();
+        }
+        Assertions.assertEquals(sumSearches, numObjects);
+
+        int sumDeletions = 0;
+        for (Future<Integer> future : futureDeletes) {
+            sumDeletions += future.get();
+        }
+        Assertions.assertEquals(sumDeletions, numObjects);
+
+        int sumInserts = 0;
+        for (Future<Integer> future : futureInserts) {
+            sumInserts += future.get();
+        }
+        Assertions.assertEquals(sumInserts, numObjects);
 
     }
 }

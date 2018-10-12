@@ -14,13 +14,13 @@ public class SimpleListBasicTests {
     @ParameterizedTest
     @MethodSource("simpleListProvider")
     public void insertElementShouldReturnTrue(final SimpleList<TestObject> list) throws Exception {
-        Assertions.assertTrue(list.insert(new TestObject(1L, "Test")));
+        Assertions.assertTrue(list.insert(new TestObject(1L)));
     }
 
     @ParameterizedTest
     @MethodSource("simpleListProvider")
     public void searchExistentElementShouldReturnItsPosition(final SimpleList<TestObject> list) throws Exception {
-        TestObject obj = new TestObject(1L, "Test");
+        TestObject obj = new TestObject(1L);
         list.insert(obj);
 
         Assertions.assertEquals(list.search(obj), 0);
@@ -29,10 +29,10 @@ public class SimpleListBasicTests {
     @ParameterizedTest
     @MethodSource("simpleListProvider")
     public void searchNonExistentElementShouldReturnNegative(final SimpleList<TestObject> list) throws Exception {
-        TestObject obj = new TestObject(1L, "Test");
+        TestObject obj = new TestObject(1L);
         list.insert(obj);
 
-        TestObject nonObj = new TestObject(2L, "Test Non Exist");
+        TestObject nonObj = new TestObject(2L);
 
             Assertions.assertTrue(list.search(nonObj) < 0);
     }
@@ -40,7 +40,7 @@ public class SimpleListBasicTests {
     @ParameterizedTest
     @MethodSource("simpleListProvider")
     public void deleteExistentElementShouldReturnTrue(final SimpleList<TestObject> list) throws Exception {
-        TestObject obj = new TestObject(1L, "Test");
+        TestObject obj = new TestObject(1L);
         list.insert(obj);
 
         Assertions.assertTrue(list.delete(obj));
@@ -49,10 +49,10 @@ public class SimpleListBasicTests {
     @ParameterizedTest
     @MethodSource("simpleListProvider")
     public void deleteNonExistentElementShouldReturnFalse(final SimpleList<TestObject> list) throws Exception {
-        TestObject obj = new TestObject(1L, "Test");
+        TestObject obj = new TestObject(1L);
         list.insert(obj);
 
-        TestObject nonObj = new TestObject(2L, "Test Non Exist");
+        TestObject nonObj = new TestObject(2L);
 
         Assertions.assertFalse(list.delete(nonObj));
     }

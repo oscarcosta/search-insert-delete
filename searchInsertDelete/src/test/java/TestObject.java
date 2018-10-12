@@ -1,41 +1,39 @@
-import java.time.LocalDateTime;
+
 import java.util.Objects;
 
 public class TestObject implements TimedObject {
 
     Long id;
-    String name;
-    LocalDateTime dateTime;
 
-    public TestObject() {
-    }
+    Long uid;
 
-    public TestObject(Long id, String name) {
+    public TestObject(Long id) {
         this.id = id;
-        this.name = name;
     }
 
     @Override
-    public void setDateTime(LocalDateTime dateTime) {
-        this.dateTime = dateTime;
+    public void setUID(Long uid) {
+        this.uid = uid;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TestObject testObject = (TestObject) o;
-        return Objects.equals(id, testObject.id) &&
-                Objects.equals(name, testObject.name);
+        TestObject object = (TestObject) o;
+        return Objects.equals(id, object.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name);
+        return Objects.hash(id);
     }
 
     @Override
     public String toString() {
-        return "TestObject{id=" + id + ", name='" + name + ", dateTime=" + dateTime + "'}";
+        return "TestObject{" +
+                "id=" + id +
+                ", uid=" + uid +
+                '}';
     }
 }

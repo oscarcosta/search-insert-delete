@@ -1,5 +1,7 @@
 public interface SimpleList<E extends TimedObject> {
 
+    int size();
+
     int search(E e) throws InterruptedException;
 
     E get(int index) throws InterruptedException;
